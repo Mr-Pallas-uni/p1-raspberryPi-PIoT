@@ -1,0 +1,10 @@
+{
+  "temperature": { "min": 18.0, "max": 26.0, "offset": -1.5 },
+  "humidity":    { "min": 40.0, "max": 60.0 },
+  "pressure":    { "min": 1000.0, "max": 1025.0 },
+  "orientation": {
+    "pitch": { "absMax": 15.0 },
+    "roll":  { "absMax": 15.0 },
+    "yaw":   { "min": 0.0, "max": 45.0 }
+  }
+}
