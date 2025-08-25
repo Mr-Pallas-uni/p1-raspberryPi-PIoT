@@ -15,22 +15,12 @@
 #D 
 
 import json
+import sqlite3
 
 
 class JsonParser():
-    tempMin:float
-    tempMax:float
-    tempOffset:float
-    humidityMin:float
-    humidityMax:float
-    pressureMin:float
-    pressureMax:float
-    pitchMax:float
-    rollMax:float
-    yawMax:float
-
     def __init__(self) -> None:
-        pass
+        self.validateJson()
 
 
     def validateJson(self) -> None:
@@ -46,81 +36,127 @@ class JsonParser():
         try:
             #Temperature
             current = "temperature - min"
-            self.tempMin = data["temperature"]["min"]
+            float(data["temperature"]["min"])
 
             current = "temperature - max"
-            self.tempMax = data["temperature"]["max"]
+            float(data["temperature"]["max"])
 
             current = "temperature - offset"
-            self.tempOffset = data["temperature"]["offset"]
+            float(data["temperature"]["offset"])
 
             #Humidity
             current = "humidity - min"
-            self.humidityMin = data["humidity"]["min"]
+            float(data["humidity"]["min"])
 
             current = "humidity - max"
-            self.humidityMax = data["humidity"]["max"]
+            float(data["humidity"]["max"])
             
             #Pressure
             current = "pressure - min"
-            self.pressureMin = data["pressure"]["min"]
+            float(data["pressure"]["min"])
 
             current = "pressure - max"
-            self.pressureMax = data["pressure"]["max"]
+            float(data["pressure"]["max"])
             
             #Orientation
             current = "orientation - pitch absMax"
-            self.pitchMax = data["orientation"]["pitch"]["absMax"]
+            float(data["orientation"]["pitch"]["absMax"])
 
             current = "orientation - roll absMax"
-            self.rollMax = data["orientation"]["roll"]["absMax"]
+            float(data["orientation"]["roll"]["absMax"])
 
             current = "orientation - yaw absMax"
-            self.yawMax = data["orientation"]["yaw"]["absMax"]
+            float(data["orientation"]["yaw"]["absMax"])
 
+        
         except Exception:
             print(
                 f"Error: failed to load config; JSON structure of '{current}' "
                 "was not what was expected."
             )
             raise
+        self.__validateRanges(data)
+        return data
     
-    def validateRanges(self)-> None:
-
-            # --- Temperature ---
-            if self.tempMin >= self.tempMax:
-                raise ValueError(f"temperature range invalid: min({self.tempMin}) >= max({self.tempMax})")
-
-            # --- Humidity ---
-            if self.humidityMin >= self.humidityMax:
-                raise ValueError(f"humidity range invalid: min({self.humidityMin}) >= max({self.humidityMax})")
-
-            # --- Pressure ---
-            if self.pressureMin >= self.pressureMax:
-                raise ValueError(f"pressure range invalid: min({self.pressureMin}) >= max({self.pressureMax})")
-
-            # --- Orientation ---
-            if self.pitchMax <= 0:
-                raise ValueError(f"pitch absMax must be > 0, got {self.pitchMax}")
-
-            if self.rollMax <= 0:
-                raise ValueError(f"roll absMax must be > 0, got {self.rollMax}")
-
-            if self.yawMax <= 0:
-                raise ValueError(f"yaw absMax must be > 0, got {self.yawMax}")
+    def __validateRanges(self, config: dict) -> None:
+        # Temperature
+        if config["temperature"]["min"] >= config["temperature"]["max"]:
+            raise ValueError(f"temperature range invalid: min({config['temperature']['min']}) >= max({config['temperature']['max']})")
+        
+        if config["temperature"]["offset"] <= 0:
+            raise ValueError(f"temperature offset must be > 0, got {config['temperature']['offset']}")
 
 
+        # Humidity
+        if config["humidity"]["min"] >= config["humidity"]["max"]:
+            raise ValueError(f"humidity range invalid: min({config['humidity']['min']}) >= max({config['humidity']['max']})")
+
+        # Pressure
+        if config["pressure"]["min"] >= config["pressure"]["max"]:
+            raise ValueError(f"pressure range invalid: min({config['pressure']['min']}) >= max({config['pressure']['max']})")
+
+        # Orientation
+        if config["orientation"]["pitchMax"] <= 0:
+            raise ValueError(f"pitch absMax must be > 0, got {config['orientation']['pitchMax']}")
+
+        if config["orientation"]["rollMax"] <= 0:
+            raise ValueError(f"roll absMax must be > 0, got {config['orientation']['rollMax']}")
+
+        if config["orientation"]["yawMax"] <= 0:
+            raise ValueError(f"yaw absMax must be > 0, got {config['orientation']['yawMax']}")
+        
+class log():
+    config:dict
+    log = dict({
+                "temperature": 0,
+                "humidity":    0,
+                "pressure":    0,
+                "pitch":       0,
+                "roll":        0,
+                "yaw":         0,
+                "temperature class": "",
+                "humidity class":    "",
+                "pressure class":    "",
+                "pitch class":       "",
+                "roll class":        "",
+                "yaw class":         ""
+                })
 
 
+    def __init__(self, temp, humid, press, pitch, roll, yaw, time, config) -> None:
+        self.config = config
+        pass
+    def setTemp(self, temp):
+        self.log["temperature"] = temp
+        if temp < self.config["temperature"]["min"]:
+            self.log["temperature class"] = "low"
+            
 
-import sqlite3 as lite
 
+class sqlManager():
+    def __init__(self) -> None:
+        pass
 
-con = lite.connect('sensehat.db')
-with con: 
-    cur = con.cursor() 
-    cur.execute("DROP TABLE IF EXISTS SENSEHAT_data")
-    cur.execute("CREATE TABLE SENSEHAT_data(timestamp DATETIME, temp NUMERIC)")
+    def initDB(self) -> None:
+        con = sqlite3.connect('sensehat.db')
+        with con: 
+            cur = con.cursor() 
+            cur.execute("DROP TABLE IF EXISTS SENSEHAT_data")
+            cur.execute("CREATE TABLE SENSEHAT_data(timestamp DATETIME, temp NUMERIC, tempClas NUMERIC, humid NUMERIC," \
+            " humidClass NUMERIC, press NUMERIC, pressClass NUMERIC, " \
+            "pitch NUMERIC, pitchClass NUMERIC, roll NUMERIC," \
+            " rollClass NUMERIC, yaw NUMERIC, yawClass NUMERIC)")
+
+    def insertData(self,temp, humid, press, pitch, roll, yaw, time):
+        pass
+    
+    def logData (temp):	
+        conn=sqlite3.connect("sensehat.db")
+        curs=conn.cursor()
+        curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), (?))", (temp,))
+        conn.commit()
+        conn.close()
+
 #!/usr/bin/env python3
 # more info: https://pypi.org/project/python-crontab/
 
