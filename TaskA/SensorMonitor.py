@@ -257,6 +257,7 @@ class Display():
         self.log = log
         
     def displayNext(self):
+        print("displaying!!!!")
         #get the next sense in the list, loop back around to the start if we've reached the end
         self.currIndex = (self.currIndex + 1)%len(self.order)
         currSenseShort = self.order[self.currIndex]
@@ -306,10 +307,16 @@ def main():
     logTime = time.time()
     displayTime = time.time()
 
-    for _ in range (0,3):
+    #trigger everything once before the code starts looping.
+    log = s.getSenseLog()
+    sql.LogData(log)
+    d.updateLog(log)
+    d.displayNext()
+
+    for _ in range (0,11):
         currTime = time.time()
 
-        if logTime - currTime > logWait:
+        if  currTime - logTime > logWait:
             log = s.getSenseLog()
             sql.LogData(log)
             d.updateLog(log)
@@ -317,19 +324,12 @@ def main():
             #reset time
             logTime = time.time()
 
-        if displayTime - currTime > displayWait:
+        if currTime - displayTime > displayWait:
             d.displayNext()
 
             #reset time
             displayTime = time.time()
-
         time.sleep(1)
-
-
-    log = s.getSenseLog()
-    sql.LogData(log)
-    d.updateLog(log)
-
 
 
 # Execute program 
