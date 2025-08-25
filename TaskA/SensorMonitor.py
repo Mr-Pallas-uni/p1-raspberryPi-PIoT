@@ -199,7 +199,7 @@ class SqlManager():
         with con: 
             cur = con.cursor() 
             cur.execute("DROP TABLE IF EXISTS SENSEHAT_data")
-            cur.execute("CREATE TABLE SENSEHAT_data(timestamp DATETIME, temp NUMERIC, tempClas NUMERIC, humid NUMERIC," \
+            cur.execute("CREATE TABLE SENSEHAT_data(timestamp DATETIME, temp NUMERIC, tempClass NUMERIC, humid NUMERIC," \
             " humidClass NUMERIC, press NUMERIC, pressClass NUMERIC, " \
             "pitch NUMERIC, pitchClass NUMERIC, roll NUMERIC," \
             " rollClass NUMERIC, yaw NUMERIC, yawClass NUMERIC)")
@@ -208,7 +208,14 @@ class SqlManager():
         log = Log(temp, humid, press, pitch, roll, yaw, config).asDict()
         conn=sqlite3.connect("sensehat.db")
         curs=conn.cursor()
-        curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), (?))", (temp,))
+        curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), \
+                     (?, ?, ?, \
+                      ?, ?, ?, \
+                      ?, ?, ?, \
+                      ?, ?, ?))", (  log["temperature"], log["temperature class"], log["humidity"],
+                                     log["humidity class"], log["pressure"], log["pressure class"],
+                                     log["pitch"], log["pitch class"], log["roll"], 
+                                     log["roll class"], log["yaw"], log["yaw class"],))
         conn.commit()
         conn.close()
 
@@ -218,7 +225,4 @@ class SqlManager():
 from datetime import datetime
 from sense_hat import SenseHat
 
-time = datetime.now().strftime("%H:%M")
-sense = SenseHat()
-sense.show_message('Time is {}'.format(time), scroll_speed=0.05)
 
