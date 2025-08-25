@@ -18,7 +18,9 @@ import json
 import sqlite3
 from sense_hat import SenseHat
 import time
+import sense_hat
 
+sense = SenseHat()
 
 class JsonParser():
     """ensures the config file is valid Json and can return it as a dict."""
@@ -230,22 +232,20 @@ class Sensor():
     """gets the raw sensations, and transforms them into perception logs."""
     def __init__(self, config) -> None:
         self.config = config
-        self.sense = SenseHat()
 
     def getSenseLog(self)-> dict:
-        temp = self.sense.get_temperature()
-        humid = self.sense.get_humidity()
-        press = self.sense.get_pressure()
-        pitch = self.sense.get_orientation()["pitch"]
-        roll = self.sense.get_orientation()["roll"]
-        yaw = self.sense.get_orientation()["yaw"]
+        temp = sense.get_temperature()
+        humid = sense.get_humidity()
+        press = sense.get_pressure()
+        pitch = sense.get_orientation()["pitch"]
+        roll = sense.get_orientation()["roll"]
+        yaw = sense.get_orientation()["yaw"]
         log = Log(temp,humid,press,pitch,roll,yaw, self.config).asDict()
         return log
 
 class Display():
     """controls how logs are displayed on the raspberry pi."""
     def __init__(self) -> None:
-        self.sense = SenseHat()
 
         #dict so we can match up the keys properly
         self.cheatSheet = {
@@ -279,10 +279,14 @@ class Display():
         currSenseClass = self.cheatSheet[currSenseShort][1]
         currClass = self.log[currSenseClass]
 
-        message = f"{currSenseShort}: {currVal}"
+        self.message = f"{currSenseShort}: {currVal}"
 
-        colour = self.getDisplayColour(currClass)
-        self.sense.show_message(message, scroll_speed=0.05, back_colour= colour)
+        self.colour = self.getDisplayColour(currClass)
+        sense.show_message(self.message, scroll_speed=0.05, back_colour= self.colour)
+    
+    def repeatDisplay(self):
+        sense.show_message(self.message, scroll_speed=0.05, back_colour= self.colour)
+
 
     def getDisplayColour(self,classification:str):
         if classification == "low":
@@ -301,6 +305,12 @@ class Display():
             #error colour in case something goes wrong.
             colour = [100,0,80]
         return colour
+
+
+isPaused = False
+def switchPauseState():
+    global isPaused
+    isPaused = not isPaused        
 
 def main():
     
@@ -322,23 +332,29 @@ def main():
     d.updateLog(log)
     d.displayNext()
 
-    for _ in range (0,11):
+    
+    for _ in range (0,111):
         currTime = time.time()
 
         if  currTime - logTime > logWait:
-            log = s.getSenseLog()
-            sql.LogData(log)
-            d.updateLog(log)
+            if not isPaused:
+                log = s.getSenseLog()
+                sql.LogData(log)
+                d.updateLog(log)
 
             #reset time
             logTime = time.time()
 
         if currTime - displayTime > displayWait:
-            d.displayNext()
+            #rather than halting all displays, repeating the last one seems better.
+            if not isPaused:
+                d.displayNext()
+            else:
+                d.repeatDisplay()
 
             #reset time
             displayTime = time.time()
-        time.sleep(1)
+        time.sleep(.1)
 
 
 # Execute program 
