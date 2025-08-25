@@ -108,6 +108,7 @@ class JsonParser():
     
     def asDict(self):
         return self.config
+    
 class Log():
     config:dict
 
@@ -125,7 +126,7 @@ class Log():
             "pressure class": "",
             "pitch class": "",
             "roll class": "",
-            "yaw class": "",
+            "yaw class": ""
         }
 
         self.setTemp(temp)
@@ -192,7 +193,6 @@ class Log():
     def asDict(self):
         return self.log 
 
-
 class SqlManager():
     def __init__(self) -> None:
         self.initDB()
@@ -236,6 +236,40 @@ class sensor():
         yaw = self.sense.get_orientation()["yaw"]
         log = Log(temp,humid,press,pitch,roll,yaw, self.config).asDict()
         return log
+
+class display():
+    def __init__(self) -> None:
+        self.sense = SenseHat()
+        self.cheatSheet = {
+            "T":["temperature" ,"temperature class"],
+            "H":["humidity", "humidity class"],
+            "P":["pressure", "pressure class"],
+            "Pi":["pitch", "pitch class"],
+            "Ro":["roll", "roll"],
+            "Ya":["yaw", "yaw"]
+            }
+        
+        self.order = ["T", "H", "P", "Pi", "Ro", "Ya"]
+        self.currIndex = 0
+    
+    def updateLog(self,log:Log):
+        self.log = log.asDict()
+        pass
+    def displayNext(self):
+        #get the next sense in the list, loop back around to the start if we've reached the end
+        self.currIndex = (self.currIndex + 1)%len(self.order)
+        currSenseShort = self.order[self.currIndex]
+
+        #get what the sense is called in the log.
+        currSense = self.cheatSheet[currSenseShort][0]
+        #get the classification of the sense.
+        currSenseClass = self.cheatSheet[currSenseShort][1]
+        currVal = self.log[currSenseClass]
+        message = f"{currSenseShort}: {currVal}"
+
+        
+
+
 
 def main():
     config = JsonParser().asDict()
