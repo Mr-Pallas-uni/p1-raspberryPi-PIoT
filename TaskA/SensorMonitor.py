@@ -222,7 +222,7 @@ class SqlManager():
         conn.commit()
         conn.close()
 
-class RaspberryPi():
+class sensor():
     def __init__(self, config) -> None:
         self.config = config
         self.sense = SenseHat()
@@ -240,10 +240,11 @@ class RaspberryPi():
 def main():
     config = JsonParser().asDict()
     sql = SqlManager()
-    rp = RaspberryPi(config)
-    log = rp.getSenseLog()
+    s = sensor(config)
+
+    log = s.getSenseLog()
     sql.LogData(log)
-    
+
     for i in range (0,3):
         getSenseHatData()
         time.sleep(sampleFreq)
