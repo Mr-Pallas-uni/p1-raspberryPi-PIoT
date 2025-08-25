@@ -16,12 +16,12 @@
 
 import json
 import sqlite3
+from sense_hat import SenseHat
 
 
 class JsonParser():
     def __init__(self) -> None:
         self.validateJson()
-
 
     def validateJson(self) -> None:
         try:
@@ -76,7 +76,8 @@ class JsonParser():
             )
             raise
         self.__validateRanges(data)
-        return data
+        self.config = data
+        
     
     def __validateRanges(self, config: dict) -> None:
         # Temperature
@@ -104,7 +105,9 @@ class JsonParser():
 
         if config["orientation"]["yawMax"] <= 0:
             raise ValueError(f"yaw absMax must be > 0, got {config['orientation']['yawMax']}")
-        
+    
+    def asDict(self):
+        return self.config
 class Log():
     config:dict
 
@@ -192,6 +195,7 @@ class Log():
 
 class SqlManager():
     def __init__(self) -> None:
+        self.initDB()
         pass
 
     def initDB(self) -> None:
@@ -204,8 +208,7 @@ class SqlManager():
             "pitch NUMERIC, pitchClass NUMERIC, roll NUMERIC," \
             " rollClass NUMERIC, yaw NUMERIC, yawClass NUMERIC)")
 
-    def insertData(self,temp, humid, press, pitch, roll, yaw, config):
-        log = Log(temp, humid, press, pitch, roll, yaw, config).asDict()
+    def LogData(self,log:dict):
         conn=sqlite3.connect("sensehat.db")
         curs=conn.cursor()
         curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), \
@@ -219,10 +222,35 @@ class SqlManager():
         conn.commit()
         conn.close()
 
-#!/usr/bin/env python3
-# more info: https://pypi.org/project/python-crontab/
+class RaspberryPi():
+    def __init__(self, config) -> None:
+        self.config = config
+        self.sense = SenseHat()
 
-from datetime import datetime
-from sense_hat import SenseHat
+    def getSenseLog(self)-> dict:
+        temp = self.sense.get_temperature()
+        humid = self.sense.get_humidity()
+        press = self.sense.get_pressure()
+        pitch = self.sense.get_orientation()["pitch"]
+        roll = self.sense.get_orientation()["roll"]
+        yaw = self.sense.get_orientation()["yaw"]
+        log = Log(temp,humid,press,pitch,roll,yaw, self.config).asDict()
+        return log
+
+def main():
+    config = JsonParser().asDict()
+    sql = SqlManager()
+    rp = RaspberryPi(config)
+    log = rp.getSenseLog()
+    sql.LogData(log)
+    
+    for i in range (0,3):
+        getSenseHatData()
+        time.sleep(sampleFreq)
+    displayData()
+
+# Execute program 
+main()
+
 
 
