@@ -107,30 +107,87 @@ class JsonParser():
         
 class log():
     config:dict
-    log = dict({
-                "temperature": 0,
-                "humidity":    0,
-                "pressure":    0,
-                "pitch":       0,
-                "roll":        0,
-                "yaw":         0,
-                "temperature class": "",
-                "humidity class":    "",
-                "pressure class":    "",
-                "pitch class":       "",
-                "roll class":        "",
-                "yaw class":         ""
-                })
 
-
-    def __init__(self, temp, humid, press, pitch, roll, yaw, time, config) -> None:
+    def __init__(self, temp, humid, press, pitch, roll, yaw, config) -> None:
         self.config = config
-        pass
+        self.log = {
+            "temperature": temp,
+            "humidity": humid,
+            "pressure": press,
+            "pitch": pitch,
+            "roll": roll,
+            "yaw": yaw,
+            "temperature class": "",
+            "humidity class": "",
+            "pressure class": "",
+            "pitch class": "",
+            "roll class": "",
+            "yaw class": "",
+        }
+
+        self.setTemp(temp)
+        self.setHumid(humid)
+        self.setPress(press)
+        self.setPitch(pitch)
+        self.setRoll(roll)
+        self.setYaw(yaw)
+
     def setTemp(self, temp):
         self.log["temperature"] = temp
+
         if temp < self.config["temperature"]["min"]:
             self.log["temperature class"] = "low"
+        elif temp > self.config["temperature"]["max"]:
+            self.log["temperature class"] = "high"
+        else:
+            self.log["temperature class"] = "comfortable"
+
+    def setHumid(self, humid):
+        self.log["humidity"] = humid
+
+        if humid < self.config["humidity"]["min"]:
+            self.log["humidity class"] = "low"
+        elif humid > self.config["humidity"]["max"]:
+            self.log["humidity class"] = "high"
+        else:
+            self.log["humidity class"] = "comfortable"
+
+    def setPress(self, press):
+        self.log["pressure"] = press
+
+        if press < self.config["pressure"]["min"]:
+            self.log["pressure class"] = "low"
+        elif press > self.config["pressure"]["max"]:
+            self.log["pressure class"] = "high"
+        else:
+            self.log["pressure class"] = "normal"
+
+    def setPitch(self, pitch):
+        self.log["pitch"] = pitch
+
+        if abs(pitch) > self.config["orientation"]["pitchMax"]:
+            self.log["pitch class"] = "tilted"
+        else:
+            self.log["pitch class"] = "aligned"
+
+    def setRoll(self, roll):
+        self.log["roll"] = roll
+
+        if abs(roll) > self.config["orientation"]["rollMax"]:
+            self.log["roll class"] = "tilted"
+        else:
+            self.log["roll class"] = "aligned"
+
+    def setYaw(self, yaw):
+        self.log["yaw"] = yaw
+
+        if abs(yaw) > self.config["orientation"]["yawMax"]:
+            self.log["yaw class"] = "tilted"
+        else:
+            self.log["yaw class"] = "aligned"
             
+    def asDict(self):
+        return self.log 
 
 
 class sqlManager():
