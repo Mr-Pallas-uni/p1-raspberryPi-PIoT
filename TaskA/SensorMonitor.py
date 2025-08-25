@@ -313,8 +313,17 @@ def main():
             sql.LogData(log)
             d.updateLog(log)
 
+            #reset time
+            logTime = time.time()
+
         if displayTime - currTime > displayWait:
             d.displayNext()
+
+            #reset time
+            displayTime = time.time()
+            
+        time.sleep(1)
+
 
     log = s.getSenseLog()
     sql.LogData(log)
