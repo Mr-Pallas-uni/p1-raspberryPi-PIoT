@@ -17,6 +17,7 @@
 import json
 import sqlite3
 from sense_hat import SenseHat
+import time
 
 
 class JsonParser():
@@ -97,14 +98,14 @@ class JsonParser():
             raise ValueError(f"pressure range invalid: min({config['pressure']['min']}) >= max({config['pressure']['max']})")
 
         # Orientation
-        if config["orientation"]["pitchMax"] <= 0:
-            raise ValueError(f"pitch absMax must be > 0, got {config['orientation']['pitchMax']}")
+        if config["orientation"]["pitch"]["absMax"] <= 0:
+            raise ValueError(f"pitch absMax must be > 0, got {config['orientation']['pitchMax']['absMax']}")
 
-        if config["orientation"]["rollMax"] <= 0:
-            raise ValueError(f"roll absMax must be > 0, got {config['orientation']['rollMax']}")
+        if config["orientation"]["roll"]['absMax'] <= 0:
+            raise ValueError(f"roll absMax must be > 0, got {config['orientation']['rollMax']['absMax']}")
 
-        if config["orientation"]["yawMax"] <= 0:
-            raise ValueError(f"yaw absMax must be > 0, got {config['orientation']['yawMax']}")
+        if config["orientation"]["yaw"]['absMax'] <= 0:
+            raise ValueError(f"yaw absMax must be > 0, got {config['orientation']['yawMax']['absMax']}")
     
     def asDict(self):
         return self.config
@@ -137,7 +138,7 @@ class Log():
         self.setYaw(yaw)
 
     def setTemp(self, temp):
-        self.log["temperature"] = temp
+        self.log["temperature"] = temp - self.config["temperature"]["offset"]
 
         if temp < self.config["temperature"]["min"]:
             self.log["temperature class"] = "low"
@@ -169,7 +170,7 @@ class Log():
     def setPitch(self, pitch):
         self.log["pitch"] = pitch
 
-        if abs(pitch) > self.config["orientation"]["pitchMax"]:
+        if abs(pitch) > self.config["orientation"]["pitch"]['absMax']:
             self.log["pitch class"] = "tilted"
         else:
             self.log["pitch class"] = "aligned"
@@ -177,7 +178,7 @@ class Log():
     def setRoll(self, roll):
         self.log["roll"] = roll
 
-        if abs(roll) > self.config["orientation"]["rollMax"]:
+        if abs(roll) > self.config["orientation"]["roll"]['absMax']:
             self.log["roll class"] = "tilted"
         else:
             self.log["roll class"] = "aligned"
@@ -185,7 +186,7 @@ class Log():
     def setYaw(self, yaw):
         self.log["yaw"] = yaw
 
-        if abs(yaw) > self.config["orientation"]["yawMax"]:
+        if abs(yaw) > self.config["orientation"]["yaw"]['absMax']:
             self.log["yaw class"] = "tilted"
         else:
             self.log["yaw class"] = "aligned"
@@ -212,17 +213,17 @@ class SqlManager():
         conn=sqlite3.connect("sensehat.db")
         curs=conn.cursor()
         curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), \
-                     (?, ?, ?, \
+                     ?, ?, ?, \
                       ?, ?, ?, \
                       ?, ?, ?, \
-                      ?, ?, ?))", (  log["temperature"], log["temperature class"], log["humidity"],
+                      ?, ?, ?)", (  log["temperature"], log["temperature class"], log["humidity"],
                                      log["humidity class"], log["pressure"], log["pressure class"],
                                      log["pitch"], log["pitch class"], log["roll"], 
                                      log["roll class"], log["yaw"], log["yaw class"],))
         conn.commit()
         conn.close()
 
-class sensor():
+class Sensor():
     def __init__(self, config) -> None:
         self.config = config
         self.sense = SenseHat()
@@ -237,7 +238,7 @@ class sensor():
         log = Log(temp,humid,press,pitch,roll,yaw, self.config).asDict()
         return log
 
-class display():
+class Display():
     def __init__(self) -> None:
         self.sense = SenseHat()
         self.cheatSheet = {
@@ -252,8 +253,8 @@ class display():
         self.order = ["T", "H", "P", "Pi", "Ro", "Ya"]
         self.currIndex = 0
     
-    def updateLog(self,log:Log):
-        self.log = log.asDict()
+    def updateLog(self,log:dict):
+        self.log = log
         
     def displayNext(self):
         #get the next sense in the list, loop back around to the start if we've reached the end
@@ -262,12 +263,15 @@ class display():
 
         #get what the sense is called in the log.
         currSense = self.cheatSheet[currSenseShort][0]
+        currVal = self.log[currSense]
+
         #get the classification of the sense.
         currSenseClass = self.cheatSheet[currSenseShort][1]
-        currVal = self.log[currSense]
+        currClass = self.log[currSenseClass]
+
         message = f"{currSenseShort}: {currVal}"
 
-        colour = self.getDisplayColour(currSenseClass)
+        colour = self.getDisplayColour(currClass)
         self.sense.show_message(message, scroll_speed=0.05, back_colour= colour)
 
     def getDisplayColour(self,classification:str):
@@ -287,17 +291,31 @@ class display():
             colour = [100,0,80]
         return colour
 
-        
+displayWait = 5
+logWait = 10     
 
+def displayRoutine(d):
+    d.displayNext()
+    time.sleep(displayWait)
 
 
 def main():
     config = JsonParser().asDict()
     sql = SqlManager()
-    s = sensor(config)
+    s = Sensor(config)
+    d = Display()
+
+    for _ in range (0,3):
+        log = s.getSenseLog()
+        sql.LogData(log)
+        d.updateLog(log)
+        time.sleep(logWait - displayWait)
+        d.displayNext()
 
     log = s.getSenseLog()
     sql.LogData(log)
+    d.updateLog(log)
+
 
 
 # Execute program 
