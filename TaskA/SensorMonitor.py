@@ -332,7 +332,8 @@ def main():
     d.updateLog(log)
     d.displayNext()
 
-    
+    sense.stick.direction_middle = switchPauseState()
+
     for _ in range (0,111):
         currTime = time.time()
 
