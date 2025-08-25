@@ -21,6 +21,7 @@ import time
 
 
 class JsonParser():
+    """ensures the config file is valid Json and can return it as a dict."""
     def __init__(self) -> None:
         self.validateJson()
 
@@ -111,6 +112,7 @@ class JsonParser():
         return self.config
     
 class Log():
+    """class for creating the dict containing the raw sensations and their classifications."""
     config:dict
 
     def __init__(self, temp, humid, press, pitch, roll, yaw, config) -> None:
@@ -195,6 +197,7 @@ class Log():
         return self.log 
 
 class SqlManager():
+    """manages all contact with the mySql database, specifically the safe insertion of logs."""
     def __init__(self) -> None:
         self.initDB()
         pass
@@ -224,6 +227,7 @@ class SqlManager():
         conn.close()
 
 class Sensor():
+    """gets the raw sensations, and transforms them into perception logs."""
     def __init__(self, config) -> None:
         self.config = config
         self.sense = SenseHat()
@@ -239,8 +243,11 @@ class Sensor():
         return log
 
 class Display():
+    """controls how logs are displayed on the raspberry pi."""
     def __init__(self) -> None:
         self.sense = SenseHat()
+
+        #dict so we can match up the keys properly
         self.cheatSheet = {
             "T":["temperature" ,"temperature class"],
             "H":["humidity", "humidity class"],
@@ -250,14 +257,16 @@ class Display():
             "Ya":["yaw", "yaw"]
             }
         
+        #ordered list to ensure we go through all of the sensors.
         self.order = ["T", "H", "P", "Pi", "Ro", "Ya"]
-        self.currIndex = 0
+
+        #index of -1 as method increments at start.
+        self.currIndex = -1
     
     def updateLog(self,log:dict):
         self.log = log
         
     def displayNext(self):
-        print("displaying!!!!")
         #get the next sense in the list, loop back around to the start if we've reached the end
         self.currIndex = (self.currIndex + 1)%len(self.order)
         currSenseShort = self.order[self.currIndex]
