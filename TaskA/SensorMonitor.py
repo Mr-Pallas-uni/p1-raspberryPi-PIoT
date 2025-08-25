@@ -291,26 +291,30 @@ class Display():
             colour = [100,0,80]
         return colour
 
-displayWait = 5
-logWait = 10     
-
-def displayRoutine(d):
-    d.displayNext()
-    time.sleep(displayWait)
-
-
 def main():
+    
+    displayWait = 5
+    logWait = 10     
+
+    #instantiate all the parts
     config = JsonParser().asDict()
     sql = SqlManager()
     s = Sensor(config)
     d = Display()
 
+    logTime = time.time()
+    displayTime = time.time()
+
     for _ in range (0,3):
-        log = s.getSenseLog()
-        sql.LogData(log)
-        d.updateLog(log)
-        time.sleep(logWait - displayWait)
-        d.displayNext()
+        currTime = time.time()
+
+        if logTime - currTime > logWait:
+            log = s.getSenseLog()
+            sql.LogData(log)
+            d.updateLog(log)
+
+        if displayTime - currTime > displayWait:
+            d.displayNext()
 
     log = s.getSenseLog()
     sql.LogData(log)
