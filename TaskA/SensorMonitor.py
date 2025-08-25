@@ -105,7 +105,7 @@ class JsonParser():
         if config["orientation"]["yawMax"] <= 0:
             raise ValueError(f"yaw absMax must be > 0, got {config['orientation']['yawMax']}")
         
-class log():
+class Log():
     config:dict
 
     def __init__(self, temp, humid, press, pitch, roll, yaw, config) -> None:
@@ -185,12 +185,12 @@ class log():
             self.log["yaw class"] = "tilted"
         else:
             self.log["yaw class"] = "aligned"
-            
+
     def asDict(self):
         return self.log 
 
 
-class sqlManager():
+class SqlManager():
     def __init__(self) -> None:
         pass
 
@@ -204,10 +204,8 @@ class sqlManager():
             "pitch NUMERIC, pitchClass NUMERIC, roll NUMERIC," \
             " rollClass NUMERIC, yaw NUMERIC, yawClass NUMERIC)")
 
-    def insertData(self,temp, humid, press, pitch, roll, yaw, time):
-        pass
-    
-    def logData (temp):	
+    def insertData(self,temp, humid, press, pitch, roll, yaw, config):
+        log = Log(temp, humid, press, pitch, roll, yaw, config).asDict()
         conn=sqlite3.connect("sensehat.db")
         curs=conn.cursor()
         curs.execute("INSERT INTO SENSEHAT_data values(datetime('now'), (?))", (temp,))
