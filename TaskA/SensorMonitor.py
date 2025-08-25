@@ -280,14 +280,15 @@ class Display():
         elif classification == "high":
             colour = [75,5,5]
         elif classification == "comfortable":
-            colour = [90,90,100]
+            colour = [5,90,5]
         elif classification == "normal":
-            colour = [90,90,100]
+            colour = [5,90,5]
         elif classification == "tilted":
             colour = [100,80,0]
         elif classification == "aligned":
-            colour = [90,90,100]
+            colour = [5,90,5]
         else:
+            #error colour in case something goes wrong.
             colour = [100,0,80]
         return colour
 
@@ -321,7 +322,7 @@ def main():
 
             #reset time
             displayTime = time.time()
-            
+
         time.sleep(1)
 
 
