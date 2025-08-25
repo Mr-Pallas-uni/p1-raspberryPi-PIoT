@@ -254,7 +254,7 @@ class display():
     
     def updateLog(self,log:Log):
         self.log = log.asDict()
-        pass
+        
     def displayNext(self):
         #get the next sense in the list, loop back around to the start if we've reached the end
         self.currIndex = (self.currIndex + 1)%len(self.order)
@@ -264,8 +264,28 @@ class display():
         currSense = self.cheatSheet[currSenseShort][0]
         #get the classification of the sense.
         currSenseClass = self.cheatSheet[currSenseShort][1]
-        currVal = self.log[currSenseClass]
+        currVal = self.log[currSense]
         message = f"{currSenseShort}: {currVal}"
+
+        colour = self.getDisplayColour(currSenseClass)
+        self.sense.show_message(message, scroll_speed=0.05, back_colour= colour)
+
+    def getDisplayColour(self,classification:str):
+        if classification == "low":
+            colour = [40,66,100]
+        elif classification == "high":
+            colour = [75,5,5]
+        elif classification == "comfortable":
+            colour = [90,90,100]
+        elif classification == "normal":
+            colour = [90,90,100]
+        elif classification == "tilted":
+            colour = [100,80,0]
+        elif classification == "aligned":
+            colour = [90,90,100]
+        else:
+            colour = [100,0,80]
+        return colour
 
         
 
@@ -279,10 +299,6 @@ def main():
     log = s.getSenseLog()
     sql.LogData(log)
 
-    for i in range (0,3):
-        getSenseHatData()
-        time.sleep(sampleFreq)
-    displayData()
 
 # Execute program 
 main()
